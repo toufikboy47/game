@@ -645,7 +645,7 @@ Awesome
         let highScore = localStorage.getItem('snakeHighScore') || 0;
         let gameRunning = false;
         let gameLoop = null;
-        let speed = 400;
+        let speed = 350;
         
         // Animation frame counter for effects
         let frameCount = 0;
@@ -888,7 +888,7 @@ Awesome
             score = 0;
             document.getElementById('score').textContent = score;
             
-            speed = 300;
+            speed = 350;
             
             spawnFood();
         }
@@ -1087,8 +1087,8 @@ Awesome
                 document.getElementById('score').textContent = score;
                 playRandomDotSound();
                 
-                // Increase speed (decrease interval)
-                speed = Math.max(80, speed - 1);
+                // Slight speed increase when eating food
+                speed = Math.max(200, speed - 1);
                 
                 spawnFood();
             } else {
