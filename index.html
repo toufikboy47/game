@@ -1,0 +1,1285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Snake Game - Neon Arcade</title>
+    <!-- <audio id="bgMusic" src="snake.mpeg" autoplay loop></audio> -->
+    <style>
+        /* ===== ENHANCED CSS STYLES ===== */
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #050505;
+            min-height: 100vh;
+            display: flex;
+Awesome
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            background-image: 
+                radial-gradient(ellipse at 50% 0%, rgba(0, 255, 136, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 100% 100%, rgba(255, 0, 255, 0.05) 0%, transparent 40%);
+        }
+
+        /* Animated background grid */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                repeating-linear-gradient(
+                    0deg,
+                    transparent,
+                    transparent 2px,
+                    rgba(0, 255, 136, 0.03) 2px,
+                    rgba(0, 255, 136, 0.03) 4px
+                ),
+                repeating-linear-gradient(
+                    90deg,
+                    transparent,
+                    transparent 50px,
+                    rgba(0, 255, 136, 0.015) 50px,
+                    rgba(0, 255, 136, 0.015) 51px
+                );
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .game-container {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 25px;
+            padding: 20px;
+        }
+
+        /* Glowing title with animation */
+        .title {
+            font-size: 3rem;
+            font-weight: 900;
+            color: #00ff88;
+            text-shadow: 
+                0 0 5px #00ff88,
+                0 0 10px #00ff88,
+                0 0 20px #00ff88,
+                0 0 40px #00ff88,
+                0 0 80px #00ff88;
+            letter-spacing: 8px;
+            animation: glow-pulse 2s ease-in-out infinite, flicker 4s infinite;
+            position: relative;
+        }
+
+        .title::before {
+            content: 'SNAKE';
+            position: absolute;
+            top: 0;
+            left: 0;
+            color: #00ffcc;
+            opacity: 0.5;
+            filter: blur(8px);
+            animation: glitch 3s infinite;
+        }
+
+        @keyframes glow-pulse {
+            0%, 100% { 
+                text-shadow: 
+                    0 0 5px #00ff88,
+                    0 0 10px #00ff88,
+                    0 0 20px #00ff88,
+                    0 0 40px #00ff88;
+            }
+            50% { 
+                text-shadow: 
+                    0 0 10px #00ff88,
+                    0 0 20px #00ff88,
+                    0 0 40px #00ff88,
+                    0 0 60px #00ff88,
+                    0 0 100px #00ff88;
+            }
+        }
+
+        @keyframes flicker {
+            0%, 100% { opacity: 1; }
+            92% { opacity: 1; }
+            93% { opacity: 0.85; }
+            94% { opacity: 1; }
+            96% { opacity: 0.9; }
+            97% { opacity: 1; }
+        }
+
+        @keyframes glitch {
+            0%, 100% { transform: translate(0); opacity: 0.3; }
+            25% { transform: translate(-2px, 1px); opacity: 0.2; }
+            50% { transform: translate(2px, -1px); opacity: 0.4; }
+            75% { transform: translate(-1px, 2px); opacity: 0.2; }
+        }
+
+        /* Score with neon glow */
+        .score-display {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: #ff00ff;
+            text-shadow: 
+                0 0 5px #ff00ff,
+                0 0 10px #ff00ff,
+                0 0 20px #ff00ff,
+                0 0 40px #ff00ff;
+            letter-spacing: 4px;
+            padding: 10px 30px;
+            border: 2px solid rgba(255, 0, 255, 0.5);
+            border-radius: 8px;
+            background: rgba(255, 0, 255, 0.05);
+            box-shadow: 
+                0 0 20px rgba(255, 0, 255, 0.2),
+                inset 0 0 20px rgba(255, 0, 255, 0.05);
+        }
+
+        .game-wrapper {
+            position: relative;
+        }
+
+        #gameCanvas {
+            border: 3px solid #00ff88;
+            box-shadow: 
+                0 0 20px #00ff88,
+                0 0 40px rgba(0, 255, 136, 0.3),
+                inset 0 0 30px rgba(0, 255, 136, 0.1);
+            border-radius: 8px;
+            background: linear-gradient(135deg, #0a0a0a 0%, #0f0f0f 100%);
+        }
+
+        /* Enhanced overlay screens with smooth transitions */
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(5, 5, 5, 0.92);
+            border-radius: 8px;
+            gap: 25px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(5px);
+        }
+
+        .overlay.hidden {
+            opacity: 0;
+            transform: scale(0.9);
+            pointer-events: none;
+        }
+
+        .overlay-title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: #00ffff;
+            text-shadow: 
+                0 0 5px #00ffff,
+                0 0 10px #00ffff,
+                0 0 20px #00ffff,
+                0 0 40px #00ffff;
+            letter-spacing: 4px;
+            animation: glow-pulse-cyan 2s ease-in-out infinite;
+        }
+
+        @keyframes glow-pulse-cyan {
+            0%, 100% { 
+                text-shadow: 
+                    0 0 5px #00ffff,
+                    0 0 10px #00ffff,
+                    0 0 20px #00ffff;
+            }
+            50% { 
+                text-shadow: 
+                    0 0 10px #00ffff,
+                    0 0 20px #00ffff,
+                    0 0 40px #00ffff,
+                    0 0 60px #00ffff;
+            }
+        }
+
+        .overlay-score {
+            font-size: 1.4rem;
+            color: #ffff00;
+            text-shadow: 
+                0 0 5px #ffff00,
+                0 0 10px #ffff00,
+                0 0 20px #ffff00;
+            letter-spacing: 2px;
+        }
+
+        .overlay-message {
+            font-size: 1rem;
+            color: #ff4444;
+            text-shadow: 0 0 10px #ff4444;
+            animation: shake 0.5s ease-in-out;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-5px); }
+            40% { transform: translateX(5px); }
+            60% { transform: translateX(-3px); }
+            80% { transform: translateX(3px); }
+        }
+
+        /* Enhanced buttons with glow and hover effects */
+        .btn {
+            padding: 18px 50px;
+            font-size: 1.3rem;
+            font-weight: 700;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(255, 255, 255, 0.3),
+                transparent
+            );
+            transition: left 0.5s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn-start {
+            background: linear-gradient(180deg, #00ff88 0%, #00cc6a 50%, #009950 100%);
+            color: #000;
+            box-shadow: 
+                0 0 20px #00ff88,
+                0 0 40px rgba(0, 255, 136, 0.4),
+                0 6px 0 #006633,
+                0 8px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn-start:hover {
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 
+                0 0 30px #00ff88,
+                0 0 60px rgba(0, 255, 136, 0.5),
+                0 8px 0 #006633,
+                0 12px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .btn-start:active {
+            transform: translateY(2px) scale(0.98);
+            box-shadow: 
+                0 0 20px #00ff88,
+                0 0 40px rgba(0, 255, 136, 0.4),
+                0 2px 0 #006633,
+                0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn-restart {
+            background: linear-gradient(180deg, #ff00ff 0%, #cc00cc 50%, #990099 100%);
+            color: #fff;
+            box-shadow: 
+                0 0 20px #ff00ff,
+                0 0 40px rgba(255, 0, 255, 0.4),
+                0 6px 0 #660066,
+                0 8px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn-restart:hover {
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 
+                0 0 30px #ff00ff,
+                0 0 60px rgba(255, 0, 255, 0.5),
+                0 8px 0 #660066,
+                0 12px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .btn-restart:active {
+            transform: translateY(2px) scale(0.98);
+            box-shadow: 
+                0 0 20px #ff00ff,
+                0 0 40px rgba(255, 0, 255, 0.4),
+                0 2px 0 #660066,
+                0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .controls-hint {
+            color: #555;
+            font-size: 0.95rem;
+            text-align: center;
+            margin-top: 15px;
+            transition: opacity 0.3s;
+        }
+
+        .controls-hint span {
+            color: #00ff88;
+            text-shadow: 0 0 10px #00ff88;
+        }
+
+        /* Mobile controls with enhanced styling */
+        .mobile-controls {
+            display: none;
+            gap: 15px;
+            margin-top: 25px;
+        }
+
+        .mobile-dpad {
+            display: grid;
+            grid-template-columns: repeat(3, 65px);
+            grid-template-rows: repeat(3, 65px);
+            gap: 8px;
+        }
+
+        .mobile-btn {
+            width: 65px;
+            height: 65px;
+            background: rgba(0, 255, 136, 0.08);
+            border: 2px solid rgba(0, 255, 136, 0.6);
+            border-radius: 12px;
+            color: #00ff88;
+            font-size: 1.6rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s ease;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            box-shadow: 
+                0 0 10px rgba(0, 255, 136, 0.2),
+                inset 0 0 15px rgba(0, 255, 136, 0.05);
+        }
+
+        .mobile-btn:active {
+            background: rgba(0, 255, 136, 0.25);
+            box-shadow: 
+                0 0 25px #00ff88,
+                0 0 50px rgba(0, 255, 136, 0.3),
+                inset 0 0 20px rgba(0, 255, 136, 0.15);
+            transform: scale(0.95);
+        }
+
+        .mobile-btn.empty {
+            visibility: hidden;
+        }
+
+        /* Responsive design */
+        @media (max-width: 600px) {
+            .title {
+                font-size: 2.2rem;
+                letter-spacing: 6px;
+            }
+
+            .score-display {
+                font-size: 1.4rem;
+                padding: 8px 25px;
+            }
+
+            #gameCanvas {
+                width: 320px;
+                height: 320px;
+            }
+
+            .mobile-controls {
+                display: flex;
+                justify-content: center;
+            }
+
+            .controls-hint {
+                display: none;
+            }
+
+            .overlay-title {
+                font-size: 2rem;
+            }
+        }
+
+        @media (max-width: 380px) {
+            .title {
+                font-size: 1.8rem;
+            }
+
+            #gameCanvas {
+                width: 290px;
+                height: 290px;
+            }
+
+            .mobile-dpad {
+                grid-template-columns: repeat(3, 55px);
+                grid-template-rows: repeat(3, 55px);
+            }
+
+            .mobile-btn {
+                width: 55px;
+                height: 55px;
+                font-size: 1.4rem;
+            }
+        }
+
+        /* High score display */
+        .high-score {
+            position: absolute;
+            top: -40px;
+            right: 0;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .high-score span {
+            color: #ffff00;
+            text-shadow: 0 0 10px #ffff00;
+        }
+
+        /* Music control section */
+        .music-section {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 12px 20px;
+            margin-top: 10px;
+            background: rgba(0, 255, 136, 0.05);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.1);
+        }
+
+        .music-label {
+            color: #00ff88;
+            font-size: 0.9rem;
+            text-shadow: 0 0 5px #00ff88;
+            letter-spacing: 2px;
+        }
+
+        .music-input-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+
+        .music-input {
+            display: none;
+        }
+
+        .music-btn {
+            padding: 8px 16px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            background: linear-gradient(180deg, #00ff88 0%, #00cc6a 100%);
+            color: #000;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .music-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+        }
+
+        .music-filename {
+            color: #888;
+            font-size: 0.8rem;
+            max-width: 120px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .music-status {
+            font-size: 0.8rem;
+            color: #888;
+            margin-left: auto;
+        }
+
+        .music-status.playing {
+            color: #00ff88;
+            text-shadow: 0 0 5px #00ff88;
+            animation: glow-pulse 1s ease-in-out infinite;
+        }
+
+        .music-controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        .music-toggle {
+            width: 36px;
+            height: 36px;
+            background: rgba(255, 0, 255, 0.1);
+            border: 2px solid rgba(255, 0, 255, 0.5);
+            border-radius: 50%;
+            color: #ff00ff;
+            font-size: 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 10px rgba(255, 0, 255, 0.2);
+        }
+
+        .music-toggle:hover {
+            background: rgba(255, 0, 255, 0.2);
+            box-shadow: 0 0 20px rgba(255, 0, 255, 0.4);
+        }
+
+        .music-toggle.active {
+            background: rgba(255, 0, 255, 0.3);
+            box-shadow: 0 0 20px #ff00ff;
+        }
+
+        /* Responsive music section */
+        @media (max-width: 600px) {
+            .music-section {
+                flex-wrap: wrap;
+                justify-content: center;
+                padding: 10px 15px;
+            }
+
+            .music-label {
+                width: 100%;
+                text-align: center;
+                margin-bottom: 5px;
+            }
+
+            .music-filename {
+                max-width: 100px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1 class="title">SNAKE</h1>
+        
+        <div class="score-display">SCORE: <span id="score">0</span></div>
+        
+        <div class="game-wrapper">
+            <canvas id="gameCanvas" width="400" height="400"></canvas>
+            
+            <!-- Start Screen -->
+            <div class="overlay" id="startScreen">
+                <h2 class="overlay-title">NEON SNAKE</h2>
+                <p style="color: #888; font-size: 0.9rem;">Use Arrow Keys or Buttons to Move</p>
+                <button class="btn btn-start" onclick="startGame()">START</button>
+            </div>
+            
+            <!-- Game Over Screen -->
+            <div class="overlay hidden" id="gameOverScreen">
+                <h2 class="overlay-title">GAME OVER</h2>
+                <p class="overlay-score">Final Score: <span id="finalScore">0</span></p>
+                <p class="overlay-message" id="gameOverMessage"></p>
+                <button class="btn btn-restart" onclick="restartGame()">RESTART</button>
+            </div>
+        </div>
+
+        <p class="controls-hint">
+            <span>Arrow Keys</span> or <span>WASD</span> to move
+        </p>
+
+        <!-- Mobile Controls with Touch Support -->
+        <div class="mobile-controls">
+            <div class="mobile-dpad">
+                <div class="mobile-btn empty"></div>
+                <div class="mobile-btn" ontouchstart="changeDirection('up')">▲</div>
+                <div class="mobile-btn empty"></div>
+                <div class="mobile-btn" ontouchstart="changeDirection('left')">◄</div>
+                <div class="mobile-btn empty"></div>
+                <div class="mobile-btn" ontouchstart="changeDirection('right')">►</div>
+                <div class="mobile-btn empty"></div>
+                <div class="mobile-btn" ontouchstart="changeDirection('down')">▼</div>
+                <div class="mobile-btn empty"></div>
+            </div>
+        </div>
+
+        <!-- Music Control Section (controlled from backend) -->
+        <div class="music-section" id="musicSection" style="display: none;">
+            <span class="music-label">MUSIC</span>
+        </div>
+    </div>
+
+    <script>
+        // ===== ENHANCED JAVASCRIPT GAME LOGIC =====
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Grid settings
+        const GRID_SIZE = 20;
+        const TILE_COUNT = canvas.width / GRID_SIZE;
+        
+        // Game state variables
+        let snake = [];
+        let food = { x: 0, y: 0 };
+        let direction = { x: 0, y: 0 };
+        let nextDirection = { x: 0, y: 0 };
+        let score = 0;
+        let highScore = localStorage.getItem('snakeHighScore') || 0;
+        let gameRunning = false;
+        let gameLoop = null;
+        let speed = 400;
+        
+        // Animation frame counter for effects
+        let frameCount = 0;
+        
+        // Touch handling
+        let touchStartX = 0;
+        let touchStartY = 0;
+        
+        // Audio context for sound effects
+        let audioContext = null;
+        let backgroundMusicInterval = null;
+        let isMusicPlaying = false;
+
+        // Custom background music
+        let customAudio = new Audio();
+        let customMusicLoaded = false;
+        let customMusicPlaying = false;
+        
+        // Multiple background music files (will be randomly selected)
+        // Add more music files here: ['music1.mp3', 'music2.mp3', 'music3.mp3']
+        let backgroundMusicFiles = ['snake.mpeg'];
+        let selectedMusic = null;
+        
+        // Red dot sounds (played when snake touches red dot)
+        let dotSounds = ['dot.mpeg', 'dot1.mpeg', 'dot2.mpeg', 'dot3.mpeg'];
+        let dotAudio = new Audio();
+        
+        // Game over sound
+        let gameOverAudio = new Audio('end1.mpeg');
+        
+        // Play random sound when touching red dot
+        function playRandomDotSound() {
+            if (dotSounds.length > 0) {
+                const randomIndex = Math.floor(Math.random() * dotSounds.length);
+                dotAudio.src = dotSounds[randomIndex];
+                dotAudio.volume = 0.5;
+                dotAudio.play().catch(() => {});
+            }
+        }
+        
+        // Randomly select background music
+        function selectRandomMusic() {
+            if (backgroundMusicFiles.length > 0) {
+                const randomIndex = Math.floor(Math.random() * backgroundMusicFiles.length);
+                selectedMusic = backgroundMusicFiles[randomIndex];
+                return selectedMusic;
+            }
+            return null;
+        }
+        
+        // Initialize audio context
+        function initAudio() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            // Select and set random background music
+            const musicFile = selectRandomMusic();
+            if (musicFile) {
+                setBackgroundMusic(musicFile);
+            }
+        }
+
+        // Initialize audio on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            initAudio();
+        });
+
+        // Background music - simple retro loop
+        function startBackgroundMusic() {
+            if (!audioContext || isMusicPlaying) return;
+            
+            isMusicPlaying = true;
+            let noteIndex = 0;
+            
+            // Simple retro melody notes (frequencies in Hz)
+            const notes = [
+                261.63, // C4
+                329.63, // E4
+                392.00, // G4
+                523.25, // C5
+                392.00, // G4
+                329.63, // E4
+                261.63, // C4
+                196.00, // G3
+            ];
+            
+            backgroundMusicInterval = setInterval(() => {
+                if (!gameRunning || !audioContext) {
+                    stopBackgroundMusic();
+                    return;
+                }
+                
+                try {
+                    const oscillator = audioContext.createOscillator();
+                    const gainNode = audioContext.createGain();
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioContext.destination);
+                    
+                    // Different wave types for variety
+                    const waveTypes = ['sine', 'triangle', 'square'];
+                    oscillator.type = waveTypes[noteIndex % 3];
+                    
+                    oscillator.frequency.setValueAtTime(notes[noteIndex], audioContext.currentTime);
+                    
+                    // Soft volume envelope
+                    gainNode.gain.setValueAtTime(0.08, audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.04, audioContext.currentTime + 0.3);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+                    
+                    oscillator.start(audioContext.currentTime);
+                    oscillator.stop(audioContext.currentTime + 0.5);
+                    
+                    noteIndex = (noteIndex + 1) % notes.length;
+                } catch (e) {}
+            }, 500);
+        }
+
+        function stopBackgroundMusic() {
+            if (backgroundMusicInterval) {
+                clearInterval(backgroundMusicInterval);
+                backgroundMusicInterval = null;
+            }
+            isMusicPlaying = false;
+        }
+
+        // Custom background music (controlled from backend)
+        // Call setBackgroundMusic('path/to/your/music.mp3') from backend
+        
+        // Set music from backend - call this function from your backend
+        function setBackgroundMusic(src) {
+            if (!src) return;
+            customAudio.src = src;
+            customAudio.loop = true;
+            customAudio.volume = 0.5;
+            customAudio.load(); // Preload the audio
+            customAudio.oncanplaythrough = function() {
+                customMusicLoaded = true;
+            };
+            customAudio.oncanplay = function() {
+                customMusicLoaded = true;
+            };
+            customAudio.onerror = function() {
+                customMusicLoaded = false;
+            };
+        }
+
+        // Play background music (called from backend or automatically on game start)
+        function playCustomMusic() {
+            if (!customMusicPlaying) {
+                // Try to play even if customMusicLoaded might not be set
+                customAudio.play().then(() => {
+                    customMusicPlaying = true;
+                }).catch(() => {
+                    // If first attempt fails, try again after a short delay
+                    setTimeout(() => {
+                        customAudio.play().then(() => {
+                            customMusicPlaying = true;
+                        }).catch(() => {});
+                    }, 500);
+                });
+            }
+        }
+
+        // Stop custom music
+        function stopCustomMusic() {
+            if (customMusicPlaying) {
+                customAudio.pause();
+                customAudio.currentTime = 0;
+                customMusicPlaying = false;
+            }
+        }
+
+        // Auto-play music when page loads (user interaction required for autoplay in most browsers)
+        document.addEventListener('click', function playOnFirstInteraction() {
+            playCustomMusic();
+            document.removeEventListener('click', playOnFirstInteraction);
+        }, { once: true });
+
+        // Play enhanced sound effects
+        function playSound(type) {
+            if (!audioContext) return;
+            
+            try {
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                switch(type) {
+                    case 'eat':
+                        // Twang sound for eating
+                        oscillator.type = 'triangle';
+                        oscillator.frequency.setValueAtTime(400, audioContext.currentTime);
+                        oscillator.frequency.exponentialRampToValueAtTime(600, audioContext.currentTime + 0.05);
+                        oscillator.frequency.exponentialRampToValueAtTime(200, audioContext.currentTime + 0.2);
+                        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+                        oscillator.start(audioContext.currentTime);
+                        oscillator.stop(audioContext.currentTime + 0.2);
+                        break;
+                    case 'gameover':
+                        // Descending crash sound
+                        oscillator.type = 'sawtooth';
+                        oscillator.frequency.setValueAtTime(300, audioContext.currentTime);
+                        oscillator.frequency.exponentialRampToValueAtTime(40, audioContext.currentTime + 0.6);
+                        gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+                        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.6);
+                        oscillator.start(audioContext.currentTime);
+                        oscillator.stop(audioContext.currentTime + 0.6);
+                        break;
+                    case 'start':
+                        // Quick ascending tone
+                        oscillator.type = 'sine';
+                        oscillator.frequency.setValueAtTime(300, audioContext.currentTime);
+                        oscillator.frequency.exponentialRampToValueAtTime(800, audioContext.currentTime + 0.1);
+                        gainNode.gain.setValueAtTime(0.15, audioContext.currentTime);
+                        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+                        oscillator.start(audioContext.currentTime);
+                        oscillator.stop(audioContext.currentTime + 0.1);
+                        break;
+                }
+            } catch (e) {}
+        }
+
+        // Initialize game
+        function initGame() {
+            const startX = Math.floor(TILE_COUNT / 2);
+            const startY = Math.floor(TILE_COUNT / 2);
+            snake = [
+                { x: startX, y: startY },
+                { x: startX - 1, y: startY },
+                { x: startX - 2, y: startY }
+            ];
+            
+            direction = { x: 1, y: 0 };
+            nextDirection = { x: 1, y: 0 };
+            
+            score = 0;
+            document.getElementById('score').textContent = score;
+            
+            speed = 300;
+            
+            spawnFood();
+        }
+
+        // Spawn food with glow effect
+        function spawnFood() {
+            let validPosition = false;
+            
+            while (!validPosition) {
+                food.x = Math.floor(Math.random() * TILE_COUNT);
+                food.y = Math.floor(Math.random() * TILE_COUNT);
+                
+                validPosition = !snake.some(segment => 
+                    segment.x === food.x && segment.y === food.y
+                );
+            }
+        }
+        
+        // Draw enhanced game graphics
+        function draw() {
+            // Clear canvas
+            ctx.fillStyle = '#0a0a0a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw subtle animated grid
+            ctx.strokeStyle = 'rgba(0, 255, 136, 0.04)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= TILE_COUNT; i++) {
+                ctx.beginPath();
+                ctx.moveTo(i * GRID_SIZE, 0);
+                ctx.lineTo(i * GRID_SIZE, canvas.height);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(0, i * GRID_SIZE);
+                ctx.lineTo(canvas.width, i * GRID_SIZE);
+                ctx.stroke();
+            }
+            
+            // Draw food with enhanced glow
+            drawFood();
+            
+            // Draw snake with enhanced effects
+            drawSnake();
+        }
+
+        // Draw food with pulsing neon glow
+        function drawFood() {
+            const time = Date.now() / 150;
+            const pulse = Math.sin(time) * 0.4 + 0.6;
+            const x = food.x * GRID_SIZE + GRID_SIZE / 2;
+            const y = food.y * GRID_SIZE + GRID_SIZE / 2;
+            
+            // Multiple glow layers
+            ctx.shadowColor = '#ff00ff';
+            ctx.shadowBlur = 30 * pulse;
+            
+            // Outer glow
+            ctx.fillStyle = `rgba(255, 0, 255, ${0.2 * pulse})`;
+            ctx.beginPath();
+            ctx.arc(x, y, GRID_SIZE / 1.5, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Main food body
+            ctx.shadowBlur = 20 * pulse;
+            ctx.fillStyle = '#ff00ff';
+            ctx.beginPath();
+            ctx.arc(x, y, GRID_SIZE / 2.5, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Inner highlight
+            ctx.shadowBlur = 0;
+            const gradient = ctx.createRadialGradient(x - 3, y - 3, 0, x, y, GRID_SIZE / 2.5);
+            gradient.addColorStop(0, '#ff99ff');
+            gradient.addColorStop(0.5, '#ff00ff');
+            gradient.addColorStop(1, '#cc00cc');
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(x, y, GRID_SIZE / 2.5, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Sparkle effect
+            ctx.fillStyle = '#fff';
+            ctx.globalAlpha = pulse;
+            ctx.beginPath();
+            ctx.arc(x - 2, y - 2, 2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalAlpha = 1;
+        }
+        
+        // Draw snake with neon glow effect
+        function drawSnake() {
+            snake.forEach((segment, index) => {
+                const isHead = index === 0;
+                const x = segment.x * GRID_SIZE;
+                const y = segment.y * GRID_SIZE;
+                
+                // Glow intensity based on position
+                const glowIntensity = isHead ? 1 : 0.6 + (index / snake.length) * 0.4;
+                
+                // Enhanced glow effect
+                ctx.shadowColor = '#00ff88';
+                ctx.shadowBlur = isHead ? 25 : 15 * glowIntensity;
+                
+                // Outer glow layer
+                ctx.fillStyle = `rgba(0, 255, 136, ${0.15 * glowIntensity})`;
+                ctx.beginPath();
+                ctx.roundRect(x - 2, y - 2, GRID_SIZE + 4, GRID_SIZE + 4, 6);
+                ctx.fill();
+                
+                // Main body
+                ctx.shadowBlur = isHead ? 20 : 10;
+                ctx.fillStyle = isHead ? '#00ff88' : `hsl(140, 100%, ${45 + (index / snake.length) * 15}%)`;
+                ctx.beginPath();
+                ctx.roundRect(x + 2, y + 2, GRID_SIZE - 4, GRID_SIZE - 4, 5);
+                ctx.fill();
+                
+                // Inner bright core
+                ctx.shadowBlur = 0;
+                const innerGradient = ctx.createLinearGradient(x, y, x + GRID_SIZE, y + GRID_SIZE);
+                innerGradient.addColorStop(0, isHead ? '#66ffbb' : '#66ffaa');
+                innerGradient.addColorStop(1, isHead ? '#00cc66' : '#00aa55');
+                ctx.fillStyle = innerGradient;
+                ctx.beginPath();
+                ctx.roundRect(x + 4, y + 4, GRID_SIZE - 8, GRID_SIZE - 8, 3);
+                ctx.fill();
+                
+                // Head details - eyes
+                if (isHead) {
+                    drawHeadEyes(x, y);
+                }
+            });
+            
+            ctx.shadowBlur = 0;
+        }
+
+        // Draw snake head eyes based on direction
+        function drawHeadEyes(x, y) {
+            ctx.fillStyle = '#000';
+            let eyePositions;
+            
+            if (direction.x === 1) {
+                eyePositions = [{x: x + 11, y: y + 6}, {x: x + 11, y: y + 13}];
+            } else if (direction.x === -1) {
+                eyePositions = [{x: x + 5, y: y + 6}, {x: x + 5, y: y + 13}];
+            } else if (direction.y === -1) {
+                eyePositions = [{x: x + 5, y: y + 5}, {x: x + 13, y: y + 5}];
+            } else {
+                eyePositions = [{x: x + 5, y: y + 11}, {x: x + 13, y: y + 11}];
+            }
+            
+            eyePositions.forEach(pos => {
+                // Eye glow
+                ctx.shadowColor = '#fff';
+                ctx.shadowBlur = 5;
+                ctx.fillStyle = '#111';
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y, 3, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Eye highlight
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = '#333';
+                ctx.beginPath();
+                ctx.arc(pos.x - 1, pos.y - 1, 1, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        // Update game state
+        function update() {
+            direction = { ...nextDirection };
+            
+            const newHead = {
+                x: snake[0].x + direction.x,
+                y: snake[0].y + direction.y
+            };
+            
+            // Wall collision
+            if (newHead.x < 0 || newHead.x >= TILE_COUNT || 
+                newHead.y < 0 || newHead.y >= TILE_COUNT) {
+                gameOver('Hit the wall!');
+                return;
+            }
+            
+            // Self collision
+            if (snake.some(segment => segment.x === newHead.x && segment.y === newHead.y)) {
+                gameOver('Hit yourself!');
+                return;
+            }
+            
+            snake.unshift(newHead);
+            
+            // Food collision
+            if (newHead.x === food.x && newHead.y === food.y) {
+                score += 10;
+                document.getElementById('score').textContent = score;
+                playRandomDotSound();
+                
+                // Increase speed (decrease interval)
+                speed = Math.max(80, speed - 1);
+                
+                spawnFood();
+            } else {
+                snake.pop();
+            }
+        }
+
+        // Game loop
+        function gameStep() {
+            frameCount++;
+            update();
+            if (gameRunning) {
+                draw();
+            }
+        }
+
+        // Start game
+        function startGame() {
+            initAudio();
+            playSound('start');
+            // startBackgroundMusic();
+            
+            // Start custom music if loaded (from backend)
+            playCustomMusic();
+            
+            document.getElementById('startScreen').classList.add('hidden');
+            document.getElementById('gameOverScreen').classList.add('hidden');
+            
+            initGame();
+            gameRunning = true;
+            
+            if (gameLoop) clearInterval(gameLoop);
+            gameLoop = setInterval(gameStep, speed);
+        }
+
+        // Restart game
+        function restartGame() {
+            // Select new random music for new game
+            selectRandomMusic();
+            if (selectedMusic) {
+                setBackgroundMusic(selectedMusic);
+            }
+            
+            playSound('start');
+            // startBackgroundMusic();
+            
+            // Restart custom music if loaded (from backend)
+            if (customMusicLoaded && !customMusicPlaying) {
+                playCustomMusic();
+            } else if (customMusicLoaded && customMusicPlaying) {
+                customAudio.currentTime = 0;
+            }
+            
+            document.getElementById('gameOverScreen').classList.add('hidden');
+            
+            initGame();
+            gameRunning = true;
+            
+            if (gameLoop) clearInterval(gameLoop);
+            gameLoop = setInterval(gameStep, speed);
+        }
+
+        // Game over
+        function gameOver(message) {
+            gameRunning = false;
+            if (gameLoop) clearInterval(gameLoop);
+            stopBackgroundMusic();
+            stopCustomMusic();
+            
+            // Play end1.mpeg for game over
+            if (gameOverAudio.src) {
+                gameOverAudio.currentTime = 0;
+                gameOverAudio.play().catch(() => {});
+            } else {
+                playSound('gameover');
+            }
+            
+            // Update high score
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('snakeHighScore', highScore);
+            }
+            
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('gameOverMessage').textContent = message;
+            document.getElementById('gameOverScreen').classList.remove('hidden');
+        }
+
+        // Change direction (keyboard)
+        function handleKeyPress(e) {
+            if (!gameRunning) return;
+            
+            switch(e.key) {
+                case 'ArrowUp':
+                case 'w':
+                case 'W':
+                    if (direction.y !== 1) nextDirection = { x: 0, y: -1 };
+                    e.preventDefault();
+                    break;
+                case 'ArrowDown':
+                case 's':
+                case 'S':
+                    if (direction.y !== -1) nextDirection = { x: 0, y: 1 };
+                    e.preventDefault();
+                    break;
+                case 'ArrowLeft':
+                case 'a':
+                case 'A':
+                    if (direction.x !== 1) nextDirection = { x: -1, y: 0 };
+                    e.preventDefault();
+                    break;
+                case 'ArrowRight':
+                case 'd':
+                case 'D':
+                    if (direction.x !== -1) nextDirection = { x: 1, y: 0 };
+                    e.preventDefault();
+                    break;
+            }
+        }
+
+        // Change direction (mobile buttons)
+        function changeDirection(dir) {
+            if (!gameRunning) return;
+            
+            switch(dir) {
+                case 'up':
+                    if (direction.y !== 1) nextDirection = { x: 0, y: -1 };
+                    break;
+                case 'down':
+                    if (direction.y !== -1) nextDirection = { x: 0, y: 1 };
+                    break;
+                case 'left':
+                    if (direction.x !== 1) nextDirection = { x: -1, y: 0 };
+                    break;
+                case 'right':
+                    if (direction.x !== -1) nextDirection = { x: 1, y: 0 };
+                    break;
+            }
+        }
+
+        // Touch swipe handling
+        function handleTouchStart(e) {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+        }
+
+        function handleTouchMove(e) {
+            if (!gameRunning) return;
+            
+            const touchEndX = e.touches[0].clientX;
+            const touchEndY = e.touches[0].clientY;
+            
+            const diffX = touchEndX - touchStartX;
+            const diffY = touchEndY - touchStartY;
+            
+            const minSwipe = 30;
+            
+            if (Math.abs(diffX) > Math.abs(diffY)) {
+                // Horizontal swipe
+                if (Math.abs(diffX) > minSwipe) {
+                    if (diffX > 0 && direction.x !== -1) {
+                        nextDirection = { x: 1, y: 0 };
+                    } else if (diffX < 0 && direction.x !== 1) {
+                        nextDirection = { x: -1, y: 0 };
+                    }
+                }
+            } else {
+                // Vertical swipe
+                if (Math.abs(diffY) > minSwipe) {
+                    if (diffY > 0 && direction.y !== -1) {
+                        nextDirection = { x: 0, y: 1 };
+                    } else if (diffY < 0 && direction.y !== 1) {
+                        nextDirection = { x: 0, y: -1 };
+                    }
+                }
+            }
+            
+            // Prevent scrolling
+            e.preventDefault();
+        }
+
+        // Event listeners
+        document.addEventListener('keydown', handleKeyPress);
+        
+        // Touch event listeners for swipe
+        canvas.addEventListener('touchstart', handleTouchStart, { passive: true });
+        canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+
+        // Initial draw
+        initGame();
+        draw();
+    </script>
+</body>
+</html>
